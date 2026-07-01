@@ -17,7 +17,6 @@ def get_stories(db: Session = Depends(get_db)):
     return stories
 
 @router.post("/stories", response_model=StoryOut, dependencies=[Depends(require_api_key)])
-@router.post("/stories", response_model=StoryOut, dependencies=[Depends(require_api_key)])
 def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
     digest = db.query(Digest).filter(Digest.id == payload.digest_id).first()
     if not digest:
@@ -33,3 +32,10 @@ def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_story)
     return new_story
+
+@router.get("/stories/{slug}", response_model=StoryOut)
+def get_story_by_slug(slug: str, db: Session = Depends(get_db)):
+    story = db.query(Story).filter(Story.slug == slug).first()
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    return story

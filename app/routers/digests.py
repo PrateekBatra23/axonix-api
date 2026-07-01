@@ -27,3 +27,9 @@ def post_digests(payload: DigestCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_digest)
     return new_digest
+@router.get("/digests/{slug}", response_model=DigestOut)
+def get_digest_by_slug(slug: str, db: Session = Depends(get_db)):
+    digest = db.query(Digest).filter(Digest.slug == slug).first()
+    if not digest:
+        raise HTTPException(status_code=404, detail="Digest not found")
+    return digest
