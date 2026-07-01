@@ -3,7 +3,8 @@ from ..database import get_db
 from ..schemas import DigestCreate, DigestOut
 from ..models import Digest
 from sqlalchemy.orm import Session
-
+from app.auth import require_api_key
+from fastapi import APIRouter, Depends, Header, HTTPException
 router = APIRouter(
     prefix="/api/v1",
     tags=["digests"]
@@ -14,9 +15,13 @@ def get_digests(db: Session = Depends(get_db)):
     alldigest = db.query(Digest).order_by(Digest.publish_date.desc()).all()
     return alldigest
 
-@router.post("/digests", response_model=DigestOut)
+@router.post("/digests", response_model=DigestOut, dependencies=[Depends(require_api_key)])
 def post_digests(payload: DigestCreate, db: Session = Depends(get_db)):
     slug = str(payload.publish_date)
+    existing = db.query(Digest).filter(Digest.slug == slug).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Digest for this date already exists")
+    
     new_digest = Digest(**payload.model_dump(), slug=slug)
     db.add(new_digest)
     db.commit()
