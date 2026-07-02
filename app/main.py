@@ -9,6 +9,7 @@ app = FastAPI(title="Frontier")
 
 origins = [
     "http://localhost:3000",
+    "https://axonix-web.vercel.app",
 ]
 
 app.add_middleware(
