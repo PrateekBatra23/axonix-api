@@ -3,6 +3,7 @@ from ..database import get_db
 from ..schemas import DigestCreate, DigestOut
 from ..models import Digest
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.auth import require_api_key
 from fastapi import APIRouter, Depends, Header, HTTPException
 router = APIRouter(
@@ -10,10 +11,13 @@ router = APIRouter(
     tags=["digests"]
 )
 
+
 @router.get("/digests", response_model=list[DigestOut])
 def get_digests(db: Session = Depends(get_db)):
-    alldigest = db.query(Digest).order_by(Digest.publish_date.desc()).all()
-    return alldigest
+    digests = db.query(Digest).order_by(Digest.publish_date.desc()).all()
+    for digest in digests:
+        digest.story_count = len(digest.stories)
+    return digests
 
 @router.post("/digests", response_model=DigestOut, dependencies=[Depends(require_api_key)])
 def post_digests(payload: DigestCreate, db: Session = Depends(get_db)):

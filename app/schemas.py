@@ -11,6 +11,7 @@ class DigestOut(BaseModel):
     publish_date: date
     overall_summary: str
     created_at: datetime
+    story_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,6 +30,8 @@ class StoryOut(BaseModel):
     id: int
     slug: str
     digest_id: int
+    digest_slug: str | None = None
+    digest_publish_date: date | None = None
     headline: str
     summary: str
     link: str
