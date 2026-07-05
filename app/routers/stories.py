@@ -6,30 +6,48 @@ from sqlalchemy.orm import Session
 from slugify import slugify
 from app.auth import require_api_key
 from fastapi import APIRouter, Depends, Header, HTTPException
+from app.utils.company import get_company_slug
 router = APIRouter(
     prefix="/api/v1",
     tags=["stories"]
 )
 
 @router.get("/stories", response_model=list[StoryOut])
-def get_stories(digest_id: int | None = None, db: Session = Depends(get_db)):
+def get_stories(
+    digest_id: int | None = None,
+    tag: str | None = None,
+    company: str | None = None,
+    db: Session = Depends(get_db)
+):
     q = db.query(Story)
     if digest_id:
         q = q.filter(Story.digest_id == digest_id)
+    if tag:
+        # Match tag anchored to comma boundaries
+        q = q.filter(
+            (Story.topic_tags == tag) |
+            (Story.topic_tags.like(f"{tag},%")) |
+            (Story.topic_tags.like(f"%,{tag}")) |
+            (Story.topic_tags.like(f"%,{tag},%"))
+        )
+    if company:
+        q = q.filter(Story.company_slug == company)
     return q.order_by(Story.id.desc()).all()
+
 
 @router.post("/stories", response_model=StoryOut, dependencies=[Depends(require_api_key)])
 def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
     digest = db.query(Digest).filter(Digest.id == payload.digest_id).first()
     if not digest:
         raise HTTPException(status_code=404, detail="Digest not found")
+
     slug = slugify(payload.headline)
-    # Handle duplicate slugs
     existing = db.query(Story).filter(Story.slug == slug).first()
     if existing:
         raise HTTPException(status_code=409, detail="Story with this headline already exists")
 
-    new_story = Story(**payload.model_dump(), slug=slug)
+    company_slug = get_company_slug(payload.source)
+    new_story = Story(**payload.model_dump(), slug=slug, company_slug=company_slug)
     db.add(new_story)
     db.commit()
     db.refresh(new_story)

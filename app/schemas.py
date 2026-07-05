@@ -25,6 +25,7 @@ class StoryCreate(BaseModel):
     published_date: str
     topic_tags: str
     img_url: str
+    company_slug: str | None = None
 
 class StoryOut(BaseModel):
     id: int
@@ -36,6 +37,7 @@ class StoryOut(BaseModel):
     summary: str
     link: str
     source: str
+    company_slug: str | None = None
     published_date: str
     topic_tags: str
     img_url: str

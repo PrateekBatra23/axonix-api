@@ -29,5 +29,5 @@ class Story(Base):
     topic_tags = Column(String)
     img_url = Column(String)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
+    company_slug = Column(String, nullable=True, index=True)
     digest = relationship("Digest", back_populates="stories")
