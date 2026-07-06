@@ -31,3 +31,4 @@ class Story(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     company_slug = Column(String, nullable=True, index=True)
     digest = relationship("Digest", back_populates="stories")
+    internal_source = Column(String, nullable=True)
