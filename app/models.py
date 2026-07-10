@@ -32,3 +32,4 @@ class Story(Base):
     company_slug = Column(String, nullable=True, index=True)
     digest = relationship("Digest", back_populates="stories")
     internal_source = Column(String, nullable=True)
+    image_category = Column(String, nullable=True)
