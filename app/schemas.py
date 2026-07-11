@@ -48,3 +48,45 @@ class StoryOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class JobCreate(BaseModel):
+    title: str
+    company: str
+    location: str
+    remote: bool = False
+    employment_type: str
+    experience_level: str | None = None
+    role_category: str | None = None
+    tags: str | None = None
+    apply_url: str
+    external_id: str
+    source: str
+    posted_at: datetime
+
+
+class JobOut(BaseModel):
+    id: int
+    title: str
+    company: str
+    company_slug: str | None = None
+    location: str
+    remote: bool
+    employment_type: str
+    experience_level: str | None = None
+    role_category: str | None = None
+    tags: str | None = None
+    apply_url: str
+    external_id: str
+    source: str
+    posted_at: datetime
+    scraped_at: datetime
+    is_active: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class JobListResponse(BaseModel):
+    jobs: list[JobOut]
+    total: int
+    has_more: bool
