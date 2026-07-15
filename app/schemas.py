@@ -26,7 +26,7 @@ class StoryCreate(BaseModel):
     published_date: str
     topic_tags: str
     img_url: str
-    image_category: str | None = None  # add this
+    image_category: str | None = None 
 
 
 class StoryOut(BaseModel):
@@ -61,7 +61,7 @@ class JobCreate(BaseModel):
     apply_url: str
     external_id: str
     source: str
-    posted_at: datetime
+    posted_at: datetime| None = None
 
 
 class JobOut(BaseModel):
@@ -78,7 +78,7 @@ class JobOut(BaseModel):
     apply_url: str
     external_id: str
     source: str
-    posted_at: datetime
+    posted_at: datetime| None = None
     scraped_at: datetime
     is_active: bool
     created_at: datetime

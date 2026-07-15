@@ -35,7 +35,7 @@ def get_stories(
     return q.order_by(Story.id.desc()).all()
 
 
-@router.post("/stories", response_model=StoryOut, dependencies=[Depends(require_api_key)])
+@router.post("/stories", response_model=StoryOut,status_code=201, dependencies=[Depends(require_api_key)])
 def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
     digest = db.query(Digest).filter(Digest.id == payload.digest_id).first()
     if not digest:

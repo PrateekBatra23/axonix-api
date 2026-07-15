@@ -50,7 +50,7 @@ class Job(Base):
     apply_url = Column(String)
     external_id = Column(String, index=True)
     source = Column(String)
-    posted_at = Column(DateTime(timezone=True))
+    posted_at = Column(DateTime(timezone=True), nullable=True)  
     scraped_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

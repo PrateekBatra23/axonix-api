@@ -19,7 +19,7 @@ def get_digests(db: Session = Depends(get_db)):
         digest.story_count = len(digest.stories)
     return digests
 
-@router.post("/digests", response_model=DigestOut, dependencies=[Depends(require_api_key)])
+@router.post("/digests", response_model=DigestOut, status_code=201,dependencies=[Depends(require_api_key)])
 def post_digests(payload: DigestCreate, db: Session = Depends(get_db)):
     slug = str(payload.publish_date)
     existing = db.query(Digest).filter(Digest.slug == slug).first()

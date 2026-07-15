@@ -30,7 +30,10 @@ def get_jobs(
 
     q = db.query(Job).filter(
         Job.is_active == True,
-        Job.posted_at >= thirty_days_ago,
+        (
+            (Job.posted_at >= thirty_days_ago) |
+            ((Job.posted_at.is_(None)) & (Job.scraped_at >= thirty_days_ago))
+        ),
     )
 
     if company:
@@ -58,12 +61,21 @@ def get_jobs(
     return JobListResponse(jobs=jobs, total=total, has_more=has_more)
 
 
-@router.post("/jobs", response_model=JobOut, dependencies=[Depends(require_api_key)])
+@router.post("/jobs", response_model=JobOut,status_code=201, dependencies=[Depends(require_api_key)])
 def post_job(payload: JobCreate, db: Session = Depends(get_db)):
-    existing = db.query(Job).filter(
-        Job.external_id == payload.external_id,
-        Job.source == payload.source,
-    ).first()
+    if payload.posted_at is not None:
+        existing = db.query(Job).filter(
+            Job.external_id == payload.external_id,
+            Job.source == payload.source,
+            Job.posted_at == payload.posted_at,
+        ).first()
+    else:
+        existing = db.query(Job).filter(
+            Job.external_id == payload.external_id,
+            Job.source == payload.source,
+            Job.posted_at.is_(None),
+        ).first()
+
     if existing:
         raise HTTPException(status_code=409, detail="Job already exists")
 
