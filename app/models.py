@@ -53,4 +53,34 @@ class Job(Base):
     posted_at = Column(DateTime(timezone=True), nullable=True)  
     scraped_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
+    pipeline_run_id = Column(Integer, ForeignKey("scrape_runs.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class ScrapeRun(Base):
+    __tablename__ = "scrape_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pipeline_name = Column(String, index=True)
+    trigger_type = Column(String, default="scheduled")
+    started_at = Column(DateTime(timezone=True))
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    status = Column(String, default="running", index=True)
+
+    companies_scraped = Column(Integer, default=0)
+    sources_failed = Column(String, nullable=True)
+    jobs_found = Column(Integer, default=0)
+    jobs_created = Column(Integer, default=0)
+    jobs_failed = Column(Integer, default=0)
+
+    error_message = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class JobFlag(Base):
+    __tablename__ = "job_flags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), index=True)
+    reason = Column(String, nullable=True)  # NULL = generic flag click, populated = reason given
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)

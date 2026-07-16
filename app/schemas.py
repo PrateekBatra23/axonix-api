@@ -61,6 +61,7 @@ class JobCreate(BaseModel):
     apply_url: str
     external_id: str
     source: str
+    pipeline_run_id: int | None = None
     posted_at: datetime| None = None
 
 
@@ -79,6 +80,7 @@ class JobOut(BaseModel):
     external_id: str
     source: str
     posted_at: datetime| None = None
+    pipeline_run_id: int | None = None   # new
     scraped_at: datetime
     is_active: bool
     created_at: datetime
@@ -90,3 +92,56 @@ class JobListResponse(BaseModel):
     jobs: list[JobOut]
     total: int
     has_more: bool
+    last_scrape_started_at: datetime | None = None
+
+class ScrapeRunStart(BaseModel):
+    pipeline_name: str
+    trigger_type: str = "scheduled"
+    started_at: datetime
+
+class ScrapeRunFinish(BaseModel):
+    finished_at: datetime
+    status: str  # "success" | "failed"
+    companies_scraped: int = 0
+    sources_failed: str | None = None
+    jobs_found: int = 0
+    jobs_created: int = 0
+    jobs_failed: int = 0
+    error_message: str | None = None
+
+class ScrapeRunOut(BaseModel):
+    id: int
+    pipeline_name: str
+    trigger_type: str
+    started_at: datetime
+    finished_at: datetime | None = None
+    duration_seconds: int | None = None
+    status: str
+    companies_scraped: int
+    sources_failed: str | None = None
+    jobs_found: int
+    jobs_created: int
+    jobs_failed: int
+    error_message: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class LatestRunOut(BaseModel):
+    pipeline_name: str
+    run_id: int
+    started_at: datetime
+
+class FlagReasonCreate(BaseModel):
+    reason: str
+
+class JobFlagsOut(BaseModel):
+    job_id: int
+    total_flags: int
+    reasons: dict[str, int]
+
+class JobBatchResponse(BaseModel):
+    received: int
+    created: int
+    failed: int
+    errors: list[dict] = []
