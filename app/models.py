@@ -68,6 +68,7 @@ class ScrapeRun(Base):
     status = Column(String, default="running", index=True)
 
     companies_scraped = Column(Integer, default=0)
+    companies_with_active_jobs = Column(Integer, default=0)
     sources_failed = Column(String, nullable=True)
     jobs_found = Column(Integer, default=0)
     jobs_created = Column(Integer, default=0)

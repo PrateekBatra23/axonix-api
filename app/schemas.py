@@ -87,12 +87,16 @@ class JobOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class LatestRunOut(BaseModel):
+    pipeline_name: str
+    run_id: int
+    started_at: datetime
 
 class JobListResponse(BaseModel):
     jobs: list[JobOut]
     total: int
     has_more: bool
-    last_scrape_started_at: datetime | None = None
+    last_scrapes: list[LatestRunOut] = []
 
 class ScrapeRunStart(BaseModel):
     pipeline_name: str
@@ -118,6 +122,7 @@ class ScrapeRunOut(BaseModel):
     duration_seconds: int | None = None
     status: str
     companies_scraped: int
+    companies_with_active_jobs: int = 0
     sources_failed: str | None = None
     jobs_found: int
     jobs_created: int
@@ -127,10 +132,6 @@ class ScrapeRunOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class LatestRunOut(BaseModel):
-    pipeline_name: str
-    run_id: int
-    started_at: datetime
 
 class FlagReasonCreate(BaseModel):
     reason: str

@@ -18,6 +18,31 @@ router = APIRouter(
     tags=["jobs"]
 )
 
+def _get_latest_runs_per_pipeline(db: Session) -> list[LatestRunOut]:
+    subq = (
+        db.query(
+            ScrapeRun.pipeline_name,
+            func.max(ScrapeRun.started_at).label("max_started_at")
+        )
+        .filter(ScrapeRun.status == "success")
+        .group_by(ScrapeRun.pipeline_name)
+        .subquery()
+    )
+
+    results = (
+        db.query(ScrapeRun.pipeline_name, ScrapeRun.id, ScrapeRun.started_at)
+        .join(
+            subq,
+            (ScrapeRun.pipeline_name == subq.c.pipeline_name)
+            & (ScrapeRun.started_at == subq.c.max_started_at)
+        )
+        .all()
+    )
+
+    return [
+        LatestRunOut(pipeline_name=r.pipeline_name, run_id=r.id, started_at=r.started_at)
+        for r in results
+    ]
 
 @router.get("/jobs", response_model=JobListResponse)
 def get_jobs(
@@ -68,19 +93,13 @@ def get_jobs(
     )
     has_more = (offset + len(jobs)) < total
 
-    latest_run = (
-        db.query(ScrapeRun)
-        .filter(ScrapeRun.status == "success")
-        .order_by(ScrapeRun.started_at.desc())
-        .first()
-    )
-    last_scrape_started_at = latest_run.started_at if latest_run else None
+    last_scrapes = _get_latest_runs_per_pipeline(db)
 
     return JobListResponse(
         jobs=jobs,
         total=total,
         has_more=has_more,
-        last_scrape_started_at=last_scrape_started_at,
+        last_scrapes=last_scrapes,
     )
 
 
@@ -177,6 +196,12 @@ def get_job_companies(all: bool = False, db: Session = Depends(get_db)):
         for r in results
     ]
 
+@router.get("/jobs/scrape-runs", response_model=list[ScrapeRunOut], dependencies=[Depends(require_api_key)])
+def list_scrape_runs(pipeline_name: str | None = None, limit: int = 20, db: Session = Depends(get_db)):
+    q = db.query(ScrapeRun)
+    if pipeline_name:
+        q = q.filter(ScrapeRun.pipeline_name == pipeline_name)
+    return q.order_by(ScrapeRun.started_at.desc()).limit(limit).all()
 
 @router.post("/jobs/scrape-runs", response_model=ScrapeRunOut, status_code=201, dependencies=[Depends(require_api_key)])
 def start_scrape_run(payload: ScrapeRunStart, db: Session = Depends(get_db)):
@@ -201,6 +226,7 @@ def finish_scrape_run(run_id: int, payload: ScrapeRunFinish, db: Session = Depen
     run.finished_at = payload.finished_at
     run.status = payload.status
     run.companies_scraped = payload.companies_scraped
+    run.companies_with_active_jobs = payload.companies_with_active_jobs
     run.sources_failed = payload.sources_failed
     run.jobs_found = payload.jobs_found
     run.jobs_created = payload.jobs_created
@@ -215,41 +241,11 @@ def finish_scrape_run(run_id: int, payload: ScrapeRunFinish, db: Session = Depen
     return run
 
 
-@router.get("/jobs/scrape-runs", response_model=list[ScrapeRunOut], dependencies=[Depends(require_api_key)])
-def list_scrape_runs(pipeline_name: str | None = None, limit: int = 20, db: Session = Depends(get_db)):
-    q = db.query(ScrapeRun)
-    if pipeline_name:
-        q = q.filter(ScrapeRun.pipeline_name == pipeline_name)
-    return q.order_by(ScrapeRun.started_at.desc()).limit(limit).all()
 
 
 @router.get("/jobs/scrape-runs/latest", response_model=list[LatestRunOut])
 def get_latest_runs_per_pipeline(db: Session = Depends(get_db)):
-    # subquery: max started_at per pipeline_name, among successful runs only
-    subq = (
-        db.query(
-            ScrapeRun.pipeline_name,
-            func.max(ScrapeRun.started_at).label("max_started_at")
-        )
-        .filter(ScrapeRun.status == "success")
-        .group_by(ScrapeRun.pipeline_name)
-        .subquery()
-    )
-
-    results = (
-        db.query(ScrapeRun.pipeline_name, ScrapeRun.id, ScrapeRun.started_at)
-        .join(
-            subq,
-            (ScrapeRun.pipeline_name == subq.c.pipeline_name)
-            & (ScrapeRun.started_at == subq.c.max_started_at)
-        )
-        .all()
-    )
-
-    return [
-        {"pipeline_name": r.pipeline_name, "run_id": r.id, "started_at": r.started_at}
-        for r in results
-    ]
+    return _get_latest_runs_per_pipeline(db)
 
 
 @router.post("/jobs/{job_id}/flag", status_code=201)
