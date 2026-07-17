@@ -8,7 +8,9 @@ app = FastAPI(title="Frontier")
 
 origins = [
     "http://localhost:3000",
-    "https://axonix-web.vercel.app",
+    "https://axonix-web.vercel.app"
+    "https://avonzi.prateekbatra.dev",
+    "https://avonzi.com",
 ]
 
 app.add_middleware(
