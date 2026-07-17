@@ -5,3 +5,5 @@ venv/
 .venv/
 env.py
 seed.py
+seed_admin.py
+test.py

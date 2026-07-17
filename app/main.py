@@ -3,8 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import digests
 from app.routers import stories
 from app.routers import jobs
+from app.routers import digests, stories, jobs, auth, admin
 
 app = FastAPI(title="Frontier")
+
+app.include_router(auth.router)
+app.include_router(admin.router)
 
 origins = [
     "http://localhost:3000",

@@ -147,3 +147,64 @@ class JobBatchResponse(BaseModel):
     created: int
     failed: int
     errors: list[dict] = []
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+class AccessTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    role: str  # "owner" | "admin" | "read_only"
+
+class UserUpdate(BaseModel):
+    role: str | None = None
+    is_active: bool | None = None
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    role: str
+    is_active: bool
+    created_at: datetime
+    last_login_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SettingOut(BaseModel):
+    id: int
+    key: str
+    value: str
+    value_type: str
+    category: str
+    description: str | None = None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class SettingUpdate(BaseModel):
+    value: str
+
+
+class SubsystemStatus(BaseModel):
+    name: str
+    status: str  # "green" | "red"
+    detail: str
+
+class AdminSummary(BaseModel):
+    subsystems: list[SubsystemStatus]
+    checked_at: datetime

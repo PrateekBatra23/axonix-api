@@ -6,3 +6,5 @@ alembic
 pydantic-settings
 python-slugify
 python-dotenv
+bcrypt
+python-jose[cryptography]
