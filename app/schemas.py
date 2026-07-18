@@ -107,7 +107,7 @@ class ScrapeRunFinish(BaseModel):
     finished_at: datetime
     status: str  # "success" | "failed"
     companies_scraped: int = 0
-    companies_with_active_jobs: int = 0
+    companies_with_active_jobs: int| None = None
     sources_failed: str | None = None
     jobs_found: int = 0
     jobs_created: int = 0
@@ -123,7 +123,7 @@ class ScrapeRunOut(BaseModel):
     duration_seconds: int | None = None
     status: str
     companies_scraped: int
-    companies_with_active_jobs: int = 0
+    companies_with_active_jobs: int | None = None
     sources_failed: str | None = None
     jobs_found: int
     jobs_created: int
