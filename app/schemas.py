@@ -208,3 +208,81 @@ class SubsystemStatus(BaseModel):
 class AdminSummary(BaseModel):
     subsystems: list[SubsystemStatus]
     checked_at: datetime
+
+class DigestListResponse(BaseModel):
+    digests: list[DigestOut]
+    total: int
+    has_more: bool
+
+class CompanyCreate(BaseModel):
+    name: str
+    group_id: int | None = None
+    theme_bg: str | None = None
+    theme_text: str | None = None
+    tracked: bool = True
+    exclusive: bool = False
+    page_visible: bool = False
+
+class CompanyUpdate(BaseModel):
+    name: str | None = None
+    group_id: int | None = None
+    theme_bg: str | None = None
+    theme_text: str | None = None
+    tracked: bool | None = None
+    exclusive: bool | None = None
+    page_visible: bool | None = None
+
+class CompanyOut(BaseModel):
+    id: int
+    slug: str
+    name: str
+    group_id: int | None = None
+    theme_bg: str | None = None
+    theme_text: str | None = None
+    tracked: bool
+    exclusive: bool
+    page_visible: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CompanyPublicOut(BaseModel):
+    slug: str
+    name: str
+    theme_bg: str | None = None
+    theme_text: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CompanyBulkCreate(BaseModel):
+    names: list[str]
+
+class CompanyBulkResponse(BaseModel):
+    created: int
+    skipped: int
+    errors: list[dict] = []
+class ImageCategoryCreate(BaseModel):
+    key: str
+    label: str
+
+class ImageCategoryOut(BaseModel):
+    id: int
+    key: str
+    label: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ImageCreate(BaseModel):
+    url: str
+    company_id: int
+    image_category_id: int
+
+class ImageOut(BaseModel):
+    id: int
+    url: str
+    company_id: int
+    image_category_id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

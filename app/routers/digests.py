@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from ..database import get_db
-from ..schemas import DigestCreate, DigestOut
+from ..schemas import DigestCreate, DigestOut,DigestListResponse
 from ..models import Digest
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -11,13 +11,13 @@ router = APIRouter(
     tags=["digests"]
 )
 
-
-@router.get("/digests", response_model=list[DigestOut])
-def get_digests(db: Session = Depends(get_db)):
-    digests = db.query(Digest).order_by(Digest.publish_date.desc()).all()
-    for digest in digests:
-        digest.story_count = len(digest.stories)
-    return digests
+@router.get("/digests", response_model=DigestListResponse)
+def get_digests(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    q = db.query(Digest).order_by(Digest.publish_date.desc())
+    total = q.count()
+    digests = q.offset(offset).limit(limit).all()
+    has_more = (offset + len(digests)) < total
+    return DigestListResponse(digests=digests, total=total, has_more=has_more)
 
 @router.post("/digests", response_model=DigestOut, status_code=201,dependencies=[Depends(require_api_key)])
 def post_digests(payload: DigestCreate, db: Session = Depends(get_db)):

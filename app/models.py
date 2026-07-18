@@ -33,6 +33,7 @@ class Story(Base):
     digest = relationship("Digest", back_populates="stories")
     internal_source = Column(String, nullable=True)
     image_category = Column(String, nullable=True)
+    image_id = Column(Integer, ForeignKey("images.id"), nullable=True)
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -130,3 +131,34 @@ class AuditLog(Base):
     action = Column(String)
     detail = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)   
+
+class Company(Base):
+    __tablename__ = "companies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String, unique=True, index=True)
+    name = Column(String, unique=True, index=True)
+    group_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
+    theme_bg = Column(String, nullable=True)
+    theme_text = Column(String, nullable=True)
+    tracked = Column(Boolean, default=True)
+    exclusive = Column(Boolean, default=False)
+    page_visible = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class ImageCategory(Base):
+    __tablename__ = "image_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True)
+    label = Column(String)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class Image(Base):
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    image_category_id = Column(Integer, ForeignKey("image_categories.id"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
