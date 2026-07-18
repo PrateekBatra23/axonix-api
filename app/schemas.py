@@ -25,7 +25,7 @@ class StoryCreate(BaseModel):
     internal_source: str | None = None  # optional
     published_date: str
     topic_tags: str
-    img_url: str
+    img_url: str  | None = None
     image_category: str | None = None 
 
 
@@ -44,7 +44,10 @@ class StoryOut(BaseModel):
     image_category: str | None = None
     published_date: str
     topic_tags: str
-    img_url: str
+    img_url: str | None = None
+    theme_bg: str | None = None
+    theme_text: str | None = None
+    image_url: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
