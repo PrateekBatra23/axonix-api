@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 
 from app.database import get_db
 from app.models import User, RefreshToken
-from app.schemas import LoginRequest, TokenResponse, RefreshRequest, AccessTokenResponse
+from app.schemas import LoginRequest, TokenResponse, RefreshRequest
 from app.auth_admin import (
     verify_password, create_access_token, create_refresh_token,
-    verify_refresh_token,
+    verify_refresh_token, get_current_user,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -28,7 +28,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/refresh", response_model=AccessTokenResponse)
+@router.post("/refresh", response_model=TokenResponse)
 def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     db_token = verify_refresh_token(db, payload.refresh_token)
     if not db_token:
@@ -38,8 +38,13 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
+    # Rotation — revoke the old refresh token, issue a brand new one
+    db_token.revoked = True
+    db.commit()
+    new_refresh_token = create_refresh_token(db, user.id)
+
     access_token = create_access_token(user.id, user.role)
-    return AccessTokenResponse(access_token=access_token)
+    return TokenResponse(access_token=access_token, refresh_token=new_refresh_token)
 
 
 @router.post("/logout")
@@ -48,4 +53,9 @@ def logout(payload: RefreshRequest, db: Session = Depends(get_db)):
     if db_token:
         db_token.revoked = True
         db.commit()
-    return {"status": "logged out"}     
+    return {"status": "logged out"}
+
+
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {"email": current_user.email, "role": current_user.role}

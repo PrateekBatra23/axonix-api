@@ -11,20 +11,15 @@ from app.routers import (
 
 app = FastAPI(title="Frontier")
 
-origins = [
-    "http://localhost:3000",
-    "https://axonix-web.vercel.app",
-    "https://avonzi.prateekbatra.dev",
-    "https://avonzi.com",
-]
+origins = []
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 
 app.include_router(auth.router)
