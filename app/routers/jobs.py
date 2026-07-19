@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models import Job, JobFlag
 from app.schemas import (
     JobCreate, JobOut, JobListResponse,
-    FlagReasonCreate, JobFlagsOut, JobBatchResponse
+    FlagReasonCreate, JobBatchResponse
 )
 from app.auth import require_api_key
 from app.routers.scrape_runs import get_latest_runs_per_pipeline
@@ -134,6 +134,14 @@ def get_job_companies(all: bool = False, db: Session = Depends(get_db)):
     ]
 
 
+@router.get("/jobs/{job_id}", response_model=JobOut)
+def get_job(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
 @router.patch("/jobs/{job_id}", response_model=JobOut, dependencies=[Depends(require_api_key)])
 def patch_job(job_id: int, db: Session = Depends(get_db)):
     # placeholder — real update logic to be added later for dashboard-driven job edits
@@ -165,24 +173,6 @@ def flag_job_reason(job_id: int, payload: FlagReasonCreate, db: Session = Depend
     db.add(flag)
     db.commit()
     return {"status": "reason recorded"}
-
-
-@router.get("/jobs/{job_id}/flags", response_model=JobFlagsOut, dependencies=[Depends(require_api_key)])
-def get_job_flags(job_id: int, db: Session = Depends(get_db)):
-    total_flags = db.query(JobFlag).filter(
-        JobFlag.job_id == job_id,
-        JobFlag.reason.is_(None),
-    ).count()
-
-    reason_rows = (
-        db.query(JobFlag.reason, func.count(JobFlag.id))
-        .filter(JobFlag.job_id == job_id, JobFlag.reason.isnot(None))
-        .group_by(JobFlag.reason)
-        .all()
-    )
-    reasons = {reason: count for reason, count in reason_rows}
-
-    return JobFlagsOut(job_id=job_id, total_flags=total_flags, reasons=reasons)
 
 
 @router.post("/jobs/batch", response_model=JobBatchResponse, status_code=201, dependencies=[Depends(require_api_key)])

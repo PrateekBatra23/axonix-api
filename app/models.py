@@ -11,6 +11,7 @@ class Digest(Base):
     overall_summary = Column(String)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     slug = Column(String, unique=True, index=True)
+    is_active = Column(Boolean, default=True)
 
     stories = relationship("Story", back_populates="digest")
 
@@ -33,7 +34,8 @@ class Story(Base):
     digest = relationship("Digest", back_populates="stories")
     internal_source = Column(String, nullable=True)
     image_category = Column(String, nullable=True)
-    image_id = Column(Integer, ForeignKey("images.id"), nullable=True)
+    image_id = Column(Integer, ForeignKey("images.id"), nullable=True, index=True)
+    is_active = Column(Boolean, default=True)
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -145,6 +147,7 @@ class Company(Base):
     exclusive = Column(Boolean, default=False)
     page_visible = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    is_active = Column(Boolean, default=True)
 
 class ImageCategory(Base):
     __tablename__ = "image_categories"
@@ -152,6 +155,7 @@ class ImageCategory(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True)
     label = Column(String)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 class Image(Base):
@@ -162,3 +166,4 @@ class Image(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     image_category_id = Column(Integer, ForeignKey("image_categories.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    is_active = Column(Boolean, default=True)

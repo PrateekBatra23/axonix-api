@@ -48,6 +48,7 @@ class StoryOut(BaseModel):
     theme_bg: str | None = None
     theme_text: str | None = None
     image_url: str | None = None
+    is_active: bool 
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -286,6 +287,36 @@ class ImageOut(BaseModel):
     url: str
     company_id: int
     image_category_id: int
+    usage_count: int = 0
+    is_active: bool
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+class ImageUpdate(BaseModel):
+    url: str | None = None
+    company_id: int | None = None
+    image_category_id: int | None = None
+    is_active: bool | None = None
+
+
+class StoryAdminUpdate(BaseModel):
+    headline: str | None = None
+    summary: str | None = None
+    link: str | None = None
+    source: str | None = None
+    internal_source: str | None = None
+    company_slug: str | None = None
+    topic_tags: str | None = None
+    image_category: str | None = None
+    image_id: int | None = None
+    is_active: bool | None = None
+
+
+class StoryStubOut(BaseModel):
+    id: int
+    slug: str
+    headline: str
+    company_slug: str | None = None
+    digest_id: int
 
     model_config = ConfigDict(from_attributes=True)

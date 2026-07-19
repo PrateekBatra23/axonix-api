@@ -5,7 +5,7 @@ from app.routers import stories
 from app.routers import jobs
 from app.routers import (
     digests, stories, jobs,
-    auth, users, settings, dashboard, scrape_runs, companies,
+    auth, users, settings, dashboard, scrape_runs, companies,admin_stories
 )
 
 
@@ -22,6 +22,7 @@ origins = []
 # )
 
 
+app.include_router(admin_stories.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(settings.router)

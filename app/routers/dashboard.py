@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone, timedelta
@@ -70,6 +70,28 @@ def admin_flags(min_flags: int = 1, db: Session = Depends(get_db)):
         .all()
     )
     return [{"job_id": r.job_id, "flag_count": r.flag_count} for r in results]
+
+
+@router.get("/jobs/{job_id}/flags", dependencies=[Depends(require_role("owner", "admin", "read_only"))])
+def admin_job_flags(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    total_flags = db.query(JobFlag).filter(
+        JobFlag.job_id == job_id,
+        JobFlag.reason.is_(None),
+    ).count()
+
+    reason_rows = (
+        db.query(JobFlag.reason, func.count(JobFlag.id))
+        .filter(JobFlag.job_id == job_id, JobFlag.reason.isnot(None))
+        .group_by(JobFlag.reason)
+        .all()
+    )
+    reasons = {reason: count for reason, count in reason_rows}
+
+    return {"job_id": job_id, "total_flags": total_flags, "reasons": reasons}
 
 
 @router.get("/content-stats", dependencies=[Depends(require_role("owner", "admin", "read_only"))])

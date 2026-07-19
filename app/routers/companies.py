@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from slugify import slugify
 
 from app.database import get_db
-from app.models import Company, ImageCategory, Image
+from app.models import Company, ImageCategory, Image, Story
 from app.schemas import (
     CompanyCreate, CompanyUpdate, CompanyOut, CompanyPublicOut,
     ImageCategoryCreate, ImageCategoryOut,
-    ImageCreate, ImageOut,
+    ImageCreate, ImageUpdate, ImageOut,
 )
 from app.auth_admin import require_role
 
@@ -109,7 +110,20 @@ def list_images(company_id: int | None = None, image_category_id: int | None = N
         q = q.filter(Image.company_id == company_id)
     if image_category_id:
         q = q.filter(Image.image_category_id == image_category_id)
-    return q.order_by(Image.created_at.desc()).all()
+    images = q.order_by(Image.created_at.desc()).all()
+
+    image_ids = [img.id for img in images]
+    usage_counts = dict(
+        db.query(Story.image_id, func.count(Story.id))
+        .filter(Story.image_id.in_(image_ids))
+        .group_by(Story.image_id)
+        .all()
+    ) if image_ids else {}
+
+    for img in images:
+        img.usage_count = usage_counts.get(img.id, 0)
+
+    return images
 
 
 @router.post("/images", response_model=ImageOut, status_code=201, dependencies=[Depends(require_role("owner", "admin"))])
@@ -127,6 +141,32 @@ def create_image(payload: ImageCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_image)
     return new_image
+
+
+@router.patch("/images/{image_id}", response_model=ImageOut, dependencies=[Depends(require_role("owner", "admin"))])
+def update_image(image_id: int, payload: ImageUpdate, db: Session = Depends(get_db)):
+    image = db.query(Image).filter(Image.id == image_id).first()
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if "company_id" in update_data:
+        company = db.query(Company).filter(Company.id == update_data["company_id"]).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+    if "image_category_id" in update_data:
+        category = db.query(ImageCategory).filter(ImageCategory.id == update_data["image_category_id"]).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Image category not found")
+
+    for field, value in update_data.items():
+        setattr(image, field, value)
+
+    db.commit()
+    db.refresh(image)
+    image.usage_count = db.query(Story).filter(Story.image_id == image.id).count()
+    return image
 
 
 @router.delete("/images/{image_id}", dependencies=[Depends(require_role("owner", "admin"))])
