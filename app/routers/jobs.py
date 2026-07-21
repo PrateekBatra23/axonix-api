@@ -10,7 +10,7 @@ from app.schemas import (
     JobCreate, JobOut, JobListResponse,
     FlagReasonCreate, JobBatchResponse
 )
-from app.auth import require_api_key
+from app.auth import require_scope
 from app.routers.scrape_runs import get_latest_runs_per_pipeline
 
 router = APIRouter(
@@ -78,7 +78,7 @@ def get_jobs(
     )
 
 
-@router.post("/jobs", response_model=JobOut, status_code=201, dependencies=[Depends(require_api_key)])
+@router.post("/jobs", response_model=JobOut, status_code=201, dependencies=[Depends(require_scope("jobs"))])
 def post_job(payload: JobCreate, db: Session = Depends(get_db)):
     if payload.posted_at is not None:
         existing = db.query(Job).filter(
@@ -142,7 +142,7 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
     return job
 
 
-@router.patch("/jobs/{job_id}", response_model=JobOut, dependencies=[Depends(require_api_key)])
+@router.patch("/jobs/{job_id}", response_model=JobOut, dependencies=[Depends(require_scope("jobs"))])
 def patch_job(job_id: int, db: Session = Depends(get_db)):
     # placeholder — real update logic to be added later for dashboard-driven job edits
     job = db.query(Job).filter(Job.id == job_id).first()
@@ -175,7 +175,7 @@ def flag_job_reason(job_id: int, payload: FlagReasonCreate, db: Session = Depend
     return {"status": "reason recorded"}
 
 
-@router.post("/jobs/batch", response_model=JobBatchResponse, status_code=201, dependencies=[Depends(require_api_key)])
+@router.post("/jobs/batch", response_model=JobBatchResponse, status_code=201, dependencies=[Depends(require_scope("jobs"))])
 def create_jobs_batch(payload: list[JobCreate], db: Session = Depends(get_db)):
     received = len(payload)
     created = 0

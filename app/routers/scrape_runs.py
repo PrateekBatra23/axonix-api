@@ -5,7 +5,7 @@ from sqlalchemy import func
 from app.database import get_db
 from app.models import ScrapeRun
 from app.schemas import ScrapeRunStart, ScrapeRunFinish, ScrapeRunOut, LatestRunOut
-from app.auth import require_api_key
+from app.auth import require_scope
 from app.auth_admin import require_role
 
 router = APIRouter(prefix="/api/v1", tags=["scrape-runs"])
@@ -40,7 +40,7 @@ def get_latest_runs_per_pipeline(db: Session) -> list[LatestRunOut]:
 
 # ── Pipeline writes (x-api-key) ───────────────────────────
 
-@router.post("/jobs/scrape-runs", response_model=ScrapeRunOut, status_code=201, dependencies=[Depends(require_api_key)])
+@router.post("/jobs/scrape-runs", response_model=ScrapeRunOut, status_code=201, dependencies=[Depends(require_scope("jobs"))])
 def start_scrape_run(payload: ScrapeRunStart, db: Session = Depends(get_db)):
     run = ScrapeRun(
         pipeline_name=payload.pipeline_name,
@@ -54,7 +54,7 @@ def start_scrape_run(payload: ScrapeRunStart, db: Session = Depends(get_db)):
     return run
 
 
-@router.patch("/jobs/scrape-runs/{run_id}", response_model=ScrapeRunOut, dependencies=[Depends(require_api_key)])
+@router.patch("/jobs/scrape-runs/{run_id}", response_model=ScrapeRunOut, dependencies=[Depends(require_scope("jobs"))])
 def finish_scrape_run(run_id: int, payload: ScrapeRunFinish, db: Session = Depends(get_db)):
     run = db.query(ScrapeRun).filter(ScrapeRun.id == run_id).first()
     if not run:
@@ -80,7 +80,7 @@ def finish_scrape_run(run_id: int, payload: ScrapeRunFinish, db: Session = Depen
 
 # ── Pipeline-key-gated read (unchanged from current behavior, not touched this pass) ──
 
-@router.get("/jobs/scrape-runs", response_model=list[ScrapeRunOut], dependencies=[Depends(require_api_key)])
+@router.get("/jobs/scrape-runs", response_model=list[ScrapeRunOut], dependencies=[Depends(require_scope("jobs"))])
 def list_scrape_runs(pipeline_name: str | None = None, limit: int = 20, db: Session = Depends(get_db)):
     q = db.query(ScrapeRun)
     if pipeline_name:

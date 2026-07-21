@@ -4,7 +4,7 @@ from app.schemas import StoryCreate, StoryOut
 from app.models import Story, Digest, Company, Image
 from sqlalchemy.orm import Session
 from slugify import slugify
-from app.auth import require_api_key
+from app.auth import require_scope
 from app.utils.company import get_company_slug
 from app.utils.image_resolution import resolve_story_image
 
@@ -55,7 +55,7 @@ def get_stories(
     return stories
 
 
-@router.post("/stories", response_model=StoryOut, status_code=201, dependencies=[Depends(require_api_key)])
+@router.post("/stories", response_model=StoryOut, status_code=201, dependencies=[Depends(require_scope("digests_stories"))])
 def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
     digest = db.query(Digest).filter(Digest.id == payload.digest_id).first()
     if not digest:

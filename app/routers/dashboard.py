@@ -8,7 +8,7 @@ from app.models import ScrapeRun, Job, JobFlag, Digest, Story
 from app.schemas import AdminSummary, SubsystemStatus
 from app.auth_admin import require_role
 from app.routers.settings import get_setting_value
-
+from app.models import NewsRun
 router = APIRouter(prefix="/api/v1/admin", tags=["dashboard"])
 
 
@@ -55,6 +55,18 @@ def get_summary(db: Session = Depends(get_db)):
         subsystems.append(SubsystemStatus(name="news_digest", status="green", detail=f"Last digest: {latest_digest.slug}"))
     else:
         subsystems.append(SubsystemStatus(name="news_digest", status="red", detail="No recent digest"))
+
+    news_run_hours = int(get_setting_value(db, "news.failure_window_hours", "30"))
+    latest_news_run = (
+        db.query(NewsRun)
+        .filter(NewsRun.status == "success")
+        .order_by(NewsRun.started_at.desc())
+        .first()
+    )
+    if latest_news_run and (now - latest_news_run.started_at) < timedelta(hours=news_run_hours):
+        subsystems.append(SubsystemStatus(name="news_pipeline", status="green", detail=f"Last successful run: {latest_news_run.started_at.isoformat()}"))
+    else:
+        subsystems.append(SubsystemStatus(name="news_pipeline", status="red", detail="No successful news pipeline run within threshold window"))
 
     return AdminSummary(subsystems=subsystems, checked_at=now)
 

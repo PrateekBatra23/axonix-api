@@ -4,7 +4,7 @@ from datetime import date, datetime
 class DigestCreate(BaseModel):
     publish_date: date
     overall_summary: str
-
+    pipeline_run_id: int | None = None
 class DigestOut(BaseModel):
     id: int
     slug: str
@@ -318,5 +318,73 @@ class StoryStubOut(BaseModel):
     headline: str
     company_slug: str | None = None
     digest_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+class NewsRunStart(BaseModel):
+    pipeline_name: str
+    trigger_type: str = "scheduled"
+    started_at: datetime
+
+class NewsRunFinishFailure(BaseModel):
+    status: str  # "failed" — this endpoint is only ever called for the failure path
+    error_message: str
+
+class NewsRunOut(BaseModel):
+    id: int
+    pipeline_name: str
+    trigger_type: str
+    started_at: datetime
+    finished_at: datetime | None = None
+    duration_seconds: int | None = None
+    status: str
+    sources_attempted: int
+    sources_failed: str | None = None
+    stories_found: int
+    stories_created: int
+    stories_failed: int
+    error_message: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StoryBulkItem(BaseModel):
+    headline: str
+    summary: str
+    link: str
+    source: str
+    internal_source: str | None = None
+    published_date: str
+    topic_tags: str
+    image_category: str | None = None
+
+class StoryBulkCreate(BaseModel):
+    news_run_id: int
+    digest_id: int
+    stories: list[StoryBulkItem]
+    sources_attempted: int = 0
+    sources_failed: str | None = None
+
+class StoryBulkResponse(BaseModel):
+    news_run_id: int
+    status: str
+    received: int
+    created: int
+    created_but_flagged: int
+    failed: int
+    errors: list[dict] = []
+    run_finished_at: datetime
+    duration_seconds: int
+
+
+class FallbackLogOut(BaseModel):
+    id: int
+    fallback_type: str
+    entity_type: str
+    entity_id: int | None = None
+    detail: str | None = None
+    news_run_id: int | None = None
+    scrape_run_id: int | None = None
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

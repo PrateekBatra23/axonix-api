@@ -1,11 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import digests
-from app.routers import stories
-from app.routers import jobs
 from app.routers import (
     digests, stories, jobs,
-    auth, users, settings, dashboard, scrape_runs, companies,admin_stories
+    auth, users, settings, dashboard, scrape_runs, companies, admin_stories,
+    news_runs,
 )
 
 
@@ -33,6 +31,7 @@ app.include_router(companies.public_router)
 app.include_router(digests.router)
 app.include_router(stories.router)
 app.include_router(jobs.router)
+app.include_router(news_runs.router)
 
 @app.get("/health")
 def health():

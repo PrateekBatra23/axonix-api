@@ -4,7 +4,7 @@ from ..schemas import DigestCreate, DigestOut, DigestListResponse
 from ..models import Digest, Story
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.auth import require_api_key
+from app.auth import require_scope
 
 router = APIRouter(
     prefix="/api/v1",
@@ -32,7 +32,7 @@ def get_digests(limit: int = 50, offset: int = 0, db: Session = Depends(get_db))
     return DigestListResponse(digests=digests, total=total, has_more=has_more)
 
 
-@router.post("/digests", response_model=DigestOut, status_code=201, dependencies=[Depends(require_api_key)])
+@router.post("/digests", response_model=DigestOut, status_code=201, dependencies=[Depends(require_scope("digests_stories"))])
 def post_digests(payload: DigestCreate, db: Session = Depends(get_db)):
     slug = str(payload.publish_date)
     existing = db.query(Digest).filter(Digest.slug == slug).first()

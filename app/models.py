@@ -12,7 +12,7 @@ class Digest(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     slug = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
-
+    pipeline_run_id = Column(Integer, ForeignKey("news_runs.id"), nullable=True, index=True)
     stories = relationship("Story", back_populates="digest")
 
 
@@ -167,3 +167,46 @@ class Image(Base):
     image_category_id = Column(Integer, ForeignKey("image_categories.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)       # "jobs-pipeline", "news-pipeline"
+    key_hash = Column(String, unique=True, index=True)     # sha256 of the raw key, never store raw
+    scope = Column(String, index=True)                      # "jobs" | "digests_stories"
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+
+class NewsRun(Base):
+    __tablename__ = "news_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pipeline_name = Column(String, index=True)
+    trigger_type = Column(String, default="scheduled")
+    started_at = Column(DateTime(timezone=True))
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    status = Column(String, default="running", index=True)
+
+    sources_attempted = Column(Integer, default=0)
+    sources_failed = Column(String, nullable=True)
+    stories_found = Column(Integer, default=0)
+    stories_created = Column(Integer, default=0)
+    stories_failed = Column(Integer, default=0)
+
+    error_message = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class FallbackLog(Base):
+    __tablename__ = "fallback_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    fallback_type = Column(String, index=True)
+    entity_type = Column(String, index=True)
+    entity_id = Column(Integer, nullable=True)
+    detail = Column(String, nullable=True)
+    news_run_id = Column(Integer, ForeignKey("news_runs.id"), nullable=True, index=True)
+    scrape_run_id = Column(Integer, ForeignKey("scrape_runs.id"), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
