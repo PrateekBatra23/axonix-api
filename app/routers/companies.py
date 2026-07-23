@@ -44,9 +44,16 @@ def update_company(company_id: int, payload: CompanyUpdate, db: Session = Depend
         raise HTTPException(status_code=404, detail="Company not found")
 
     update_data = payload.model_dump(exclude_unset=True)
+
+    if "group_id" in update_data and update_data["group_id"] is not None:
+        if update_data["group_id"] == company_id:
+            raise HTTPException(status_code=400, detail="A company cannot be its own group")
+        group = db.query(Company).filter(Company.id == update_data["group_id"]).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group company not found")
+
     for field, value in update_data.items():
         setattr(company, field, value)
-
     db.commit()
     db.refresh(company)
     return company
@@ -84,7 +91,30 @@ def create_image_category(payload: ImageCategoryCreate, db: Session = Depends(ge
     db.commit()
     db.refresh(new_category)
     return new_category
+@router.patch("/images/{image_id}", response_model=ImageOut, dependencies=[Depends(require_role("owner", "admin"))])
+def update_image(image_id: int, payload: ImageUpdate, db: Session = Depends(get_db)):
+    image = db.query(Image).filter(Image.id == image_id).first()
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
 
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if "company_id" in update_data:
+        company = db.query(Company).filter(Company.id == update_data["company_id"]).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+    if "image_category_id" in update_data:
+        category = db.query(ImageCategory).filter(ImageCategory.id == update_data["image_category_id"]).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Image category not found")
+
+    for field, value in update_data.items():
+        setattr(image, field, value)
+
+    db.commit()
+    db.refresh(image)
+    image.usage_count = db.query(Story).filter(Story.image_id == image.id).count()
+    return image
 
 @router.delete("/image-categories/{category_id}", dependencies=[Depends(require_role("owner"))])
 def delete_image_category(category_id: int, db: Session = Depends(get_db)):
