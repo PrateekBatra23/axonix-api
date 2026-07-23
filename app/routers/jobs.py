@@ -110,16 +110,13 @@ def get_job_companies(all: bool = False, db: Session = Depends(get_db)):
         Job.company_slug,
         Job.company,
         func.count(Job.id).label("job_count")
-    ).filter(Job.company_slug.isnot(None))
+    ).filter(Job.company_slug.isnot(None), Job.is_active == True)
 
     if not all:
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         query = query.filter(
-            Job.is_active == True,
-            (
-                (Job.posted_at >= thirty_days_ago) |
-                ((Job.posted_at.is_(None)) & (Job.scraped_at >= thirty_days_ago))
-            ),
+            (Job.posted_at >= thirty_days_ago) |
+            ((Job.posted_at.is_(None)) & (Job.scraped_at >= thirty_days_ago))
         )
 
     results = (
@@ -133,19 +130,9 @@ def get_job_companies(all: bool = False, db: Session = Depends(get_db)):
         for r in results
     ]
 
-
 @router.get("/jobs/{job_id}", response_model=JobOut)
 def get_job(job_id: int, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
-
-
-@router.patch("/jobs/{job_id}", response_model=JobOut, dependencies=[Depends(require_scope("jobs"))])
-def patch_job(job_id: int, db: Session = Depends(get_db)):
-    # placeholder — real update logic to be added later for dashboard-driven job edits
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = db.query(Job).filter(Job.id == job_id, Job.is_active == True).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job

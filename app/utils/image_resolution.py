@@ -1,7 +1,7 @@
 import random
 from sqlalchemy.orm import Session
 
-from app.models import Company, ImageCategory, Image, Story
+from app.models import Company, ImageCategory, Image, Story,FallbackLog
 
 
 _untracked_id_cache = None
@@ -20,11 +20,11 @@ def _images_excluding_used(db: Session, company_id: int, category_id: int, used_
     q = db.query(Image).filter(
         Image.company_id == company_id,
         Image.image_category_id == category_id,
+        Image.is_active == True,
     )
     if used_ids:
         q = q.filter(~Image.id.in_(used_ids))
     return q.all()
-
 
 def resolve_story_image(db: Session, company_slug: str | None, image_category_key: str | None, digest_id: int) -> int | None:
     """
@@ -46,7 +46,10 @@ def resolve_story_image(db: Session, company_slug: str | None, image_category_ke
         return None  # neither the requested category nor "general" exist yet
 
     # Step 2 — resolve company, fallback to Untracked
-    company = db.query(Company).filter(Company.slug == company_slug).first() if company_slug else None
+    company = db.query(Company).filter(
+        Company.slug == company_slug,
+        Company.is_active == True,
+    ).first() if company_slug else None    
     untracked_id = _get_untracked_company_id(db)
     company_id = company.id if company else untracked_id
 
@@ -73,4 +76,10 @@ def resolve_story_image(db: Session, company_slug: str | None, image_category_ke
         if candidates:
             return random.choice(candidates).id
 
+    db.add(FallbackLog(
+        fallback_type="no_image_resolved",
+        entity_type="story",
+        entity_id=None,
+        detail=f"No image found for company_slug={company_slug}, category={image_category_key}",
+    ))
     return None

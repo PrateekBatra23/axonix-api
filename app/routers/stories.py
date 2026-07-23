@@ -36,7 +36,7 @@ def get_stories(
     company: str | None = None,
     db: Session = Depends(get_db)
 ):
-    q = db.query(Story)
+    q = db.query(Story).filter(Story.is_active == True)
     if digest_id:
         q = q.filter(Story.digest_id == digest_id)
     if tag:
@@ -66,7 +66,7 @@ def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=409, detail="Story with this headline already exists")
 
-    company_slug = get_company_slug(payload.source)
+    company_slug = get_company_slug(payload.source, db=db)
     image_id = resolve_story_image(db, company_slug, payload.image_category, payload.digest_id)
 
     new_story = Story(
@@ -84,7 +84,7 @@ def post_stories(payload: StoryCreate, db: Session = Depends(get_db)):
 
 @router.get("/stories/{slug}", response_model=StoryOut)
 def get_story_by_slug(slug: str, db: Session = Depends(get_db)):
-    story = db.query(Story).filter(Story.slug == slug).first()
+    story = db.query(Story).filter(Story.slug == slug, Story.is_active == True).first()
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
 

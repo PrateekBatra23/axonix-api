@@ -143,31 +143,27 @@ def create_image(payload: ImageCreate, db: Session = Depends(get_db)):
     return new_image
 
 
-@router.patch("/images/{image_id}", response_model=ImageOut, dependencies=[Depends(require_role("owner", "admin"))])
-def update_image(image_id: int, payload: ImageUpdate, db: Session = Depends(get_db)):
-    image = db.query(Image).filter(Image.id == image_id).first()
-    if not image:
-        raise HTTPException(status_code=404, detail="Image not found")
+@router.patch("/companies/{company_id}", response_model=CompanyOut, dependencies=[Depends(require_role("owner", "admin"))])
+def update_company(company_id: int, payload: CompanyUpdate, db: Session = Depends(get_db)):
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
 
     update_data = payload.model_dump(exclude_unset=True)
 
-    if "company_id" in update_data:
-        company = db.query(Company).filter(Company.id == update_data["company_id"]).first()
-        if not company:
-            raise HTTPException(status_code=404, detail="Company not found")
-    if "image_category_id" in update_data:
-        category = db.query(ImageCategory).filter(ImageCategory.id == update_data["image_category_id"]).first()
-        if not category:
-            raise HTTPException(status_code=404, detail="Image category not found")
+    if "group_id" in update_data and update_data["group_id"] is not None:
+        if update_data["group_id"] == company_id:
+            raise HTTPException(status_code=400, detail="A company cannot be its own group")
+        group = db.query(Company).filter(Company.id == update_data["group_id"]).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group company not found")
 
     for field, value in update_data.items():
-        setattr(image, field, value)
+        setattr(company, field, value)
 
     db.commit()
-    db.refresh(image)
-    image.usage_count = db.query(Story).filter(Story.image_id == image.id).count()
-    return image
-
+    db.refresh(company)
+    return company
 
 @router.delete("/images/{image_id}", dependencies=[Depends(require_role("owner", "admin"))])
 def delete_image(image_id: int, db: Session = Depends(get_db)):
@@ -184,7 +180,7 @@ def delete_image(image_id: int, db: Session = Depends(get_db)):
 
 @public_router.get("/companies", response_model=list[CompanyPublicOut])
 def list_public_companies(exclusive: bool | None = None, db: Session = Depends(get_db)):
-    q = db.query(Company).filter(Company.page_visible == True)
+    q = db.query(Company).filter(Company.page_visible == True, Company.is_active == True)
     if exclusive is not None:
         q = q.filter(Company.exclusive == exclusive)
     return q.order_by(Company.name).all()

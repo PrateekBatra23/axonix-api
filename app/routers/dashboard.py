@@ -4,8 +4,8 @@ from sqlalchemy import func
 from datetime import datetime, timezone, timedelta
 
 from app.database import get_db
-from app.models import ScrapeRun, Job, JobFlag, Digest, Story
-from app.schemas import AdminSummary, SubsystemStatus
+from app.models import ScrapeRun, Job, JobFlag, Digest, Story,FallbackLog
+from app.schemas import AdminSummary, SubsystemStatus, FallbackLogOut
 from app.auth_admin import require_role
 from app.routers.settings import get_setting_value
 from app.models import NewsRun
@@ -114,3 +114,20 @@ def admin_content_stats(db: Session = Depends(get_db)):
         "total_jobs": db.query(Job).count(),
         "active_jobs": db.query(Job).filter(Job.is_active == True).count(),
     }
+
+@router.get("/fallback-log", response_model=list[FallbackLogOut], dependencies=[Depends(require_role("owner", "admin", "read_only"))])
+def list_fallback_log(
+    fallback_type: str | None = None,
+    entity_type: str | None = None,
+    news_run_id: int | None = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    q = db.query(FallbackLog)
+    if fallback_type:
+        q = q.filter(FallbackLog.fallback_type == fallback_type)
+    if entity_type:
+        q = q.filter(FallbackLog.entity_type == entity_type)
+    if news_run_id:
+        q = q.filter(FallbackLog.news_run_id == news_run_id)
+    return q.order_by(FallbackLog.created_at.desc()).limit(limit).all()

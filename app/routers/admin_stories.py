@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Story, Image
+from app.models import Story, Image, Company
 from app.schemas import StoryAdminUpdate, StoryOut, StoryStubOut
 from app.auth_admin import require_role
 from app.routers.stories import _attach_theme_and_image
@@ -29,9 +29,24 @@ def admin_update_story(story_id: int, payload: StoryAdminUpdate, db: Session = D
     update_data = payload.model_dump(exclude_unset=True)
 
     if "image_id" in update_data and update_data["image_id"] is not None:
-        image = db.query(Image).filter(Image.id == update_data["image_id"]).first()
+        image = db.query(Image).filter(
+            Image.id == update_data["image_id"],
+            Image.is_active == True,
+        ).first()
         if not image:
-            raise HTTPException(status_code=404, detail="Image not found")
+            raise HTTPException(status_code=404, detail="Image not found or is inactive")
+
+    if "company_slug" in update_data and update_data["company_slug"] is not None:
+        company = db.query(Company).filter(Company.slug == update_data["company_slug"]).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+    if update_data.get("is_active") is True:
+        if not story.digest or not story.digest.is_active:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot activate a story whose parent digest is inactive. Activate the digest first."
+            )
 
     for field, value in update_data.items():
         setattr(story, field, value)

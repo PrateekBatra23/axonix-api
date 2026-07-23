@@ -115,7 +115,7 @@ def create_stories_bulk(payload: StoryBulkCreate, db: Session = Depends(get_db))
                 slug = candidate_slug
                 is_flagged = True
 
-            company_slug = get_company_slug(story_data.source)
+            company_slug = get_company_slug(story_data.source, db=db, news_run_id=payload.news_run_id)
             image_id = resolve_story_image(db, company_slug, story_data.image_category, digest.id)
 
             new_story = Story(

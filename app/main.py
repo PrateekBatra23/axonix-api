@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import (
     digests, stories, jobs,
     auth, users, settings, dashboard, scrape_runs, companies, admin_stories,
-    news_runs,
+    news_runs,admin_jobs
 )
 
 
@@ -32,7 +32,7 @@ app.include_router(digests.router)
 app.include_router(stories.router)
 app.include_router(jobs.router)
 app.include_router(news_runs.router)
-
+app.include_router(admin_jobs.router)
 @app.get("/health")
 def health():
     return {"status": "ok"}

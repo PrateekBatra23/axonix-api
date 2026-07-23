@@ -12,9 +12,14 @@ class DigestOut(BaseModel):
     overall_summary: str
     created_at: datetime
     story_count: int = 0
+    is_active: bool
+    pipeline_run_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
+class DigestAdminUpdate(BaseModel):
+    overall_summary: str | None = None
+    is_active: bool | None = None
 
 class StoryCreate(BaseModel):
     digest_id: int
@@ -388,3 +393,15 @@ class FallbackLogOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class JobAdminUpdate(BaseModel):
+    title: str | None = None
+    company: str | None = None
+    location: str | None = None
+    remote: bool | None = None
+    employment_type: str | None = None
+    experience_level: str | None = None
+    role_category: str | None = None
+    tags: str | None = None
+    apply_url: str | None = None
+    is_active: bool | None = None
