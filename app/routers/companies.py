@@ -8,7 +8,7 @@ from app.models import Company, ImageCategory, Image, Story
 from app.schemas import (
     CompanyCreate, CompanyUpdate, CompanyOut, CompanyPublicOut,
     ImageCategoryCreate, ImageCategoryOut,
-    ImageCreate, ImageUpdate, ImageOut,
+    ImageCreate, ImageUpdate, ImageOut,BulkImageReassign
 )
 from app.auth_admin import require_role
 
@@ -209,10 +209,33 @@ def delete_image(image_id: int, db: Session = Depends(get_db)):
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
+    in_use = db.query(Story).filter(Story.image_id == image_id).first()
+    if in_use:
+        raise HTTPException(status_code=400, detail="Cannot delete an image that is currently in use by one or more stories. Use the bulk-reassign endpoint first.")
+
     db.delete(image)
     db.commit()
     return {"status": "deleted"}
 
+@router.patch("/images/{old_image_id}/reassign-stories", dependencies=[Depends(require_role("owner", "admin"))])
+def bulk_reassign_stories(old_image_id: int, payload: BulkImageReassign, db: Session = Depends(get_db)):
+    old_image = db.query(Image).filter(Image.id == old_image_id).first()
+    if not old_image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    if payload.new_image_id is not None:
+        new_image = db.query(Image).filter(Image.id == payload.new_image_id, Image.is_active == True).first()
+        if not new_image:
+            raise HTTPException(status_code=404, detail="New image not found or is inactive")
+        if payload.new_image_id == old_image_id:
+            raise HTTPException(status_code=400, detail="New image must differ from the image being replaced")
+
+    updated_count = db.query(Story).filter(Story.image_id == old_image_id).update(
+        {"image_id": payload.new_image_id}
+    )
+    db.commit()
+
+    return {"stories_updated": updated_count, "new_image_id": payload.new_image_id}
 
 # ── Public: Companies ──────────────────────────────────────
 

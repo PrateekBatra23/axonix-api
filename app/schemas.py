@@ -327,6 +327,7 @@ class StoryStubOut(BaseModel):
     headline: str
     company_slug: str | None = None
     digest_id: int
+    is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
 class NewsRunStart(BaseModel):
@@ -409,3 +410,6 @@ class JobAdminUpdate(BaseModel):
     tags: str | None = None
     apply_url: str | None = None
     is_active: bool | None = None
+
+class BulkImageReassign(BaseModel):
+    new_image_id: int | None = None  
