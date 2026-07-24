@@ -283,13 +283,23 @@ class ImageCategoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ImageCreate(BaseModel):
-    url: str
+    url: str | None = None
+    source_url: str | None = None
     company_id: int
     image_category_id: int
+    is_active: bool = True   # explicit default, needed for the validation logic below
+
+class ImageUpdate(BaseModel):
+    url: str | None = None
+    source_url: str | None = None
+    company_id: int | None = None
+    image_category_id: int | None = None
+    is_active: bool | None = None
 
 class ImageOut(BaseModel):
     id: int
-    url: str
+    url: str | None = None
+    source_url: str | None = None
     company_id: int
     image_category_id: int
     usage_count: int = 0
@@ -297,13 +307,7 @@ class ImageOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-class ImageUpdate(BaseModel):
-    url: str | None = None
-    company_id: int | None = None
-    image_category_id: int | None = None
-    is_active: bool | None = None
-
-
+    
 class StoryAdminUpdate(BaseModel):
     headline: str | None = None
     summary: str | None = None

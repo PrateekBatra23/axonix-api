@@ -108,6 +108,12 @@ def update_image(image_id: int, payload: ImageUpdate, db: Session = Depends(get_
         if not category:
             raise HTTPException(status_code=404, detail="Image category not found")
 
+    resulting_url = update_data.get("url", image.url)
+    resulting_is_active = update_data.get("is_active", image.is_active)
+
+    if resulting_is_active and not resulting_url:
+        raise HTTPException(status_code=400, detail="Cannot mark an image active without a url")
+
     for field, value in update_data.items():
         setattr(image, field, value)
 
@@ -155,7 +161,6 @@ def list_images(company_id: int | None = None, image_category_id: int | None = N
 
     return images
 
-
 @router.post("/images", response_model=ImageOut, status_code=201, dependencies=[Depends(require_role("owner", "admin"))])
 def create_image(payload: ImageCreate, db: Session = Depends(get_db)):
     company = db.query(Company).filter(Company.id == payload.company_id).first()
@@ -166,12 +171,15 @@ def create_image(payload: ImageCreate, db: Session = Depends(get_db)):
     if not category:
         raise HTTPException(status_code=404, detail="Image category not found")
 
+    if payload.is_active and not payload.url:
+        raise HTTPException(status_code=400, detail="Cannot create an active image without a url")
+
     new_image = Image(**payload.model_dump())
     db.add(new_image)
     db.commit()
     db.refresh(new_image)
+    new_image.usage_count = 0
     return new_image
-
 
 @router.patch("/companies/{company_id}", response_model=CompanyOut, dependencies=[Depends(require_role("owner", "admin"))])
 def update_company(company_id: int, payload: CompanyUpdate, db: Session = Depends(get_db)):

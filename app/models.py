@@ -162,7 +162,8 @@ class Image(Base):
     __tablename__ = "images"
 
     id = Column(Integer, primary_key=True, index=True)
-    url = Column(String)
+    url = Column(String, nullable=True)
+    source_url = Column(String, nullable=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     image_category_id = Column(Integer, ForeignKey("image_categories.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
